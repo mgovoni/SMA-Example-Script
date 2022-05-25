@@ -18,6 +18,11 @@ import time
 
 import requests
 
+
+from random import randint
+from time import sleep
+
+
 from datetime import datetime, timedelta
 from requests.auth import HTTPBasicAuth
 from requests.packages import urllib3
@@ -34,6 +39,15 @@ CONFIG_DATA = {}
 
 # Set a wait interval (in seconds) - 1 Day
 INTERVAL = 86400
+
+
+proxies = {
+   'http': 'http://proxyu.ha.servizi.gr-u.it:80',
+   'https': 'http://proxyu.ha.servizi.gr-u.it:80',
+}
+
+
+
 
 
 ####################
@@ -128,7 +142,7 @@ def get_message_tracking_data(start_date,
                     #print(message)
                     #message = message.text.encode('utf8').decode('ascii', 'ignore')
                     #message = message.['text'].encode('utf8').decode('ascii', 'ignore')
-                    print(message)
+                    #print(message)
                     return_data.append(message)
 
             else:
@@ -148,7 +162,7 @@ def main():
 
     # Make a timestamp for a day ago
     #seven_days_ago = datetime.utcnow().replace(second=0, microsecond=0) - timedelta(days=1)
-    seven_days_ago = datetime.utcnow().replace(second=0, microsecond=0) - timedelta(hours=1)
+    seven_days_ago = datetime.utcnow().replace(second=0, microsecond=0) - timedelta(hours=.3)
     # Convert the timestamp to ISO Format
     start_date = seven_days_ago.isoformat()
 
@@ -156,12 +170,13 @@ def main():
     end_date = datetime.utcnow().replace(second=0, microsecond=0).isoformat()
 
     # Get the last days worth of messages from the SMA
+    sleep(randint(1,3))
     message_data = get_message_tracking_data(start_date, end_date)
 
-    print(f"Messages retrieved: {len(message_data)}")
+    #print(f"Messages retrieved: {len(message_data)}")
 
     csv_data = {}
-    print(message_data)
+    #print(message_data)
     # Iterate through all messages
     for message in message_data:
 
@@ -174,7 +189,20 @@ def main():
                 # Append to the existing dictionary
                 csv_data[message["attributes"]["sender"]].append({
                     "recipients": message["attributes"]["recipient"],
-                    "subject": message["attributes"]["subject"]
+                    "subject": message["attributes"]["subject"],
+                    "senderDomain": message["attributes"]["senderDomain"],
+                    "sender": message["attributes"]["sender"],
+                    "senderGroup": message["attributes"]["senderGroup"],
+                    "messageID": message["attributes"]["messageID"],
+                    "timestamp": message["attributes"]["timestamp"],
+                    "mailPolicy": message["attributes"]["mailPolicy"],
+                    "direction": message["attributes"]["direction"],
+                    "messageID": message["attributes"]["messageID"],
+                    "verdictChart": message["attributes"]["verdictChart"],
+                    "messageStatus": message["attributes"]["messageStatus"],
+                    "senderIp": message["attributes"]["senderIp"],
+		            "friendly_from": message["attributes"]["friendly_from"]
+
                 })
 
             else:
@@ -182,20 +210,34 @@ def main():
                 # Create an initial dictionary
                 csv_data[message["attributes"]["sender"]] = [{
                     "recipients": message["attributes"]["recipient"],
-                    "subject": message["attributes"]["subject"]
+                    "subject": message["attributes"]["subject"],
+                    "senderDomain": message["attributes"]["senderDomain"],
+                    "sender": message["attributes"]["sender"],
+                    "senderGroup": message["attributes"]["senderGroup"],
+                    "messageID": message["attributes"]["messageID"],
+                    "timestamp": message["attributes"]["timestamp"],
+                    "mailPolicy": message["attributes"]["mailPolicy"],
+                    "direction": message["attributes"]["direction"],
+                    "messageID": message["attributes"]["messageID"],
+                    "verdictChart": message["attributes"]["verdictChart"],
+                    "messageStatus": message["attributes"]["messageStatus"],
+                    "senderIp": message["attributes"]["senderIp"],
+		            "friendly_from": message["attributes"]["friendly_from"]
                 }]
 
     # Write a CSV of incoming emails
-    for sender, emails in csv_data.items():
-        #with open(f"csv_files/{sender}_incoming_emails.csv", "w", newline="") as file:
-        with open(f"csv_files/{sender}_incoming_emails.csv", "w", newline="", encoding='utf-8') as file:
-            fieldnames = ["recipients", "subject"]
-            writer = csv.DictWriter(file, fieldnames=fieldnames)
+    date = datetime.now().strftime("%Y_%m_%d_%I%M%S%p")
+    with open(f"csv_files/{date}_incoming_emails.csv", "w", newline="", encoding='utf-8') as file:
+        for sender, emails in csv_data.items():
+            #with open(f"csv_files/{sender}_incoming_emails.csv", "w", newline="") as file:
+            #with open(f"csv_files/incoming_emails.csv", "w", newline="", encoding='utf-8') as file:
+                fieldnames = ["recipients", "subject","senderDomain","sender","senderGroup","messageID","timestamp","mailPolicy","direction","messageID","verdictChart","messageStatus","senderIp","friendly_from"]
+                writer = csv.DictWriter(file, fieldnames=fieldnames)
 
-            writer.writeheader()
+                writer.writeheader()
 
-            for email in emails:
-                writer.writerow(email)
+                for email in emails:
+                    writer.writerow(email)
 
 
 ###################
